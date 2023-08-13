@@ -8,18 +8,33 @@
 @inject HttpClient Http
 @inject IJSRuntime JSRuntime
 
-
-
-
-
 <PageTitle>Vocab</PageTitle>
 
 <h1>Vocab</h1>
 
-<div class="mb-3">
+@*<div class="mb-3">
     <input type="text" class="form-control" @bind="newWord" placeholder="Enter a new vocab word">
     <button class="btn btn-primary" @onclick="CreateNewWord">Add Word</button>
+</div>*@
+
+
+<div class="mb-3">
+    <input type="text" class="form-control" @bind="newWord" placeholder="Enter a new vocab word" @oninput="HandleInput">
+    <button class="btn btn-primary" @onclick="CreateNewWord">Add Word</button>
 </div>
+
+<!-- Suggestions Dropdown -->
+@if (suggestions.Count > 0)
+{
+    <div class="suggestions">
+        <ul>
+            @foreach (var suggestion in suggestions)
+            {
+                <li>@suggestion</li>
+            }
+        </ul>
+    </div>
+}
 
 @if (suggestions.Count > 0)
 {
@@ -67,6 +82,7 @@ else
 
 
 @code {
+    private string userInput = "";
 
     private List<string> suggestions = new List<string>();
 
@@ -76,33 +92,28 @@ else
 
     private string newWord = "";
 
-    private static string affContent;
-
-    private static string dicContent;
 
     private WordList? dictionary;
 
-   
+
+
     // WordList dictionary = WordList.CreateFromFiles(affContent, dicContent);
 
 
-    private Stream GetEmbeddedResourceStream(string resourceName)
-    {
-        var assembly = Assembly.GetExecutingAssembly();
-        return assembly.GetManifestResourceStream(resourceName);
-    }
+
 
     protected override async Task OnInitializedAsync()
     {
-
         try
         {
             words = await Http.GetFromJsonAsync<EnglishLearningBlazorApp.Shared.Word[]>("Words");
 
-            using (var dictionaryStream = GetEmbeddedResourceStream("EnglishLearningBlazorApp.Client.wwwroot.en_GB.dic"))
-            using (var affixStream = GetEmbeddedResourceStream("EnglishLearningBlazorApp.Client.wwwroot.en_GB.aff"))
-            {
-                dictionary = WordList.CreateFromStreams(dictionaryStream, affixStream);
+            if (dictionary == null){
+                using (var dictionaryStream = GetEmbeddedResourceStream("EnglishLearningBlazorApp.Client.wwwroot.en_GB.dic"))
+                using (var affixStream = GetEmbeddedResourceStream("EnglishLearningBlazorApp.Client.wwwroot.en_GB.aff"))
+                {
+                    dictionary = WordList.CreateFromStreams(dictionaryStream, affixStream);
+                }
             }
             // await GetExample();
         }
@@ -117,7 +128,19 @@ else
         }
     }
 
+    private Stream GetEmbeddedResourceStream(string resourceName)
+    {
+        var assembly = Assembly.GetExecutingAssembly();
+        return assembly.GetManifestResourceStream(resourceName);
+    }
 
+    private async Task HandleInput(ChangeEventArgs e)
+    {
+        userInput = e.Value?.ToString() ?? "";
+
+        // Call the suggests method with the user input
+        suggests(userInput);
+    }
 
     protected async Task GetExample()
     {
@@ -131,9 +154,9 @@ else
     {
         if (dictionary.Check(newWord))
         {
-        var response = await Http.PostAsync($"Words/{newWord}", null);
-        response.EnsureSuccessStatusCode();
-        words = await Http.GetFromJsonAsync<EnglishLearningBlazorApp.Shared.Word[]>("Words");
+            var response = await Http.PostAsync($"Words/{newWord}", null);
+            response.EnsureSuccessStatusCode();
+            words = await Http.GetFromJsonAsync<EnglishLearningBlazorApp.Shared.Word[]>("Words");
         }
     }
 
@@ -143,6 +166,9 @@ else
         words = await Http.GetFromJsonAsync<EnglishLearningBlazorApp.Shared.Word[]>("Words");
     }
 
-
+    protected void suggests(string input )
+    {
+        suggestions = dictionary.Suggest(input).ToList();
+    }
 
 }
