@@ -1,0 +1,98 @@
+﻿@page "/vocab"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using EnglishLearningBlazorApp.Shared
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+
+
+<PageTitle>Vocab</PageTitle>
+
+<h1>Vocab</h1>
+
+<div class="mb-3">
+    <input type="text" class="form-control" @bind="newWord" placeholder="Enter a new vocab word">
+    <button class="btn btn-primary" @onclick="CreateNewWord">Add Word</button>
+</div>
+
+@if (words == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead class="thead-dark">
+            <tr>
+                <th>Word</th>
+                <th>Definition</th>
+                <th>Example</th>
+                <th></th> <!-- Add an empty header for the delete button column -->
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in words)
+            {
+                <tr>
+                    <td>@item.simpleTense</td>
+                    <td>@item.definition</td>
+                    <td>@example</td>
+                    <td>
+                        <audio id="sound" src="@($"https://dictionary.cambridge.org/{item.UKAudioURI}")" />
+                        <button onclick="document.getElementById('sound').play()">Play through Javascript</button>
+                        <button type="button" class="btn btn-danger" @onclick="() => DeleteWord(item.wordId)">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+
+@code {
+    private EnglishLearningBlazorApp.Shared.Word[]? words;
+
+    private string example = "";
+
+    private string newWord = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            words = await Http.GetFromJsonAsync<EnglishLearningBlazorApp.Shared.Word[]>("Words");
+            // await GetExample();
+        }
+        catch (AccessTokenNotAvailableException exception)
+        {
+            exception.Redirect();
+        }
+        catch (Exception ex)
+        {
+            // Log the exception to the console or any logging service.
+            Console.WriteLine($"Error in OnInitializedAsync: {ex.Message}");
+        }
+    }
+
+    protected async Task GetExample()
+    {
+        HttpContent content = new StringContent("");
+
+        var response = await Http.PostAsync("ChatGPT/{lose}", content);
+        example = await response.Content.ReadAsStringAsync();
+    }
+
+    protected async Task CreateNewWord()
+    {
+        var response = await Http.PostAsync($"Words/{newWord}", null);
+        response.EnsureSuccessStatusCode();
+        words = await Http.GetFromJsonAsync<EnglishLearningBlazorApp.Shared.Word[]>("Words");
+    }
+
+    protected async Task DeleteWord(int id)
+    {
+        var response = await Http.DeleteAsync($"Words/{id}");
+        words = await Http.GetFromJsonAsync<EnglishLearningBlazorApp.Shared.Word[]>("Words");
+    }
+
+}
