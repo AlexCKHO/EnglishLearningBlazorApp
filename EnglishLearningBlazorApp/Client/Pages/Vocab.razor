@@ -1,9 +1,15 @@
 ﻿@page "/vocab"
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.WebAssembly.Authentication
-@using EnglishLearningBlazorApp.Shared
+@using EnglishLearningBlazorApp.Client
+@using System.Reflection;
+@using WeCantSpell
+@using WeCantSpell.Hunspell;
 @inject HttpClient Http
 @inject IJSRuntime JSRuntime
+
+
+
 
 
 <PageTitle>Vocab</PageTitle>
@@ -14,6 +20,17 @@
     <input type="text" class="form-control" @bind="newWord" placeholder="Enter a new vocab word">
     <button class="btn btn-primary" @onclick="CreateNewWord">Add Word</button>
 </div>
+
+@if (suggestions.Count > 0)
+{
+    <div class="suggestions">
+        <p>Suggestions:</p>
+        @foreach (var suggestion in suggestions)
+        {
+            <p>@suggestion</p>
+        }
+    </div>
+}
 
 @if (words == null)
 {
@@ -38,7 +55,7 @@ else
                     <td>@item.definition</td>
                     <td>@example</td>
                     <td>
-                        <audio id="sound" src="@($"https://dictionary.cambridge.org/{item.UKAudioURI}")" />
+                        <audio id="sound" src="@($"https://dictionary.cambridge.org/{@item.UKAudioURI}")" />
                         <button onclick="document.getElementById('sound').play()">Play through Javascript</button>
                         <button type="button" class="btn btn-danger" @onclick="() => DeleteWord(item.wordId)">Delete</button>
                     </td>
@@ -50,17 +67,43 @@ else
 
 
 @code {
+
+    private List<string> suggestions = new List<string>();
+
     private EnglishLearningBlazorApp.Shared.Word[]? words;
 
     private string example = "";
 
     private string newWord = "";
 
+    private static string affContent;
+
+    private static string dicContent;
+
+    private WordList? dictionary;
+
+   
+    // WordList dictionary = WordList.CreateFromFiles(affContent, dicContent);
+
+
+    private Stream GetEmbeddedResourceStream(string resourceName)
+    {
+        var assembly = Assembly.GetExecutingAssembly();
+        return assembly.GetManifestResourceStream(resourceName);
+    }
+
     protected override async Task OnInitializedAsync()
     {
+
         try
         {
             words = await Http.GetFromJsonAsync<EnglishLearningBlazorApp.Shared.Word[]>("Words");
+
+            using (var dictionaryStream = GetEmbeddedResourceStream("EnglishLearningBlazorApp.Client.wwwroot.en_GB.dic"))
+            using (var affixStream = GetEmbeddedResourceStream("EnglishLearningBlazorApp.Client.wwwroot.en_GB.aff"))
+            {
+                dictionary = WordList.CreateFromStreams(dictionaryStream, affixStream);
+            }
             // await GetExample();
         }
         catch (AccessTokenNotAvailableException exception)
@@ -74,6 +117,8 @@ else
         }
     }
 
+
+
     protected async Task GetExample()
     {
         HttpContent content = new StringContent("");
@@ -84,9 +129,12 @@ else
 
     protected async Task CreateNewWord()
     {
+        if (dictionary.Check(newWord))
+        {
         var response = await Http.PostAsync($"Words/{newWord}", null);
         response.EnsureSuccessStatusCode();
         words = await Http.GetFromJsonAsync<EnglishLearningBlazorApp.Shared.Word[]>("Words");
+        }
     }
 
     protected async Task DeleteWord(int id)
@@ -94,5 +142,7 @@ else
         var response = await Http.DeleteAsync($"Words/{id}");
         words = await Http.GetFromJsonAsync<EnglishLearningBlazorApp.Shared.Word[]>("Words");
     }
+
+
 
 }

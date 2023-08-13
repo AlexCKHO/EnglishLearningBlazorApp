@@ -23,7 +23,7 @@ namespace EnglishLearningBlazorApp.Server.Controllers
             _context = context;
         }
 
-        // GET: api/Words
+        // GET:/Words
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Word>>> GetWords()
         {
@@ -34,7 +34,7 @@ namespace EnglishLearningBlazorApp.Server.Controllers
             return await _context.Words.ToListAsync();
         }
 
-        // GET: api/Words/5
+        // GET: /Words/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Word>> GetWord(int id)
         {
@@ -52,7 +52,7 @@ namespace EnglishLearningBlazorApp.Server.Controllers
             return word;
         }
 
-        // PUT: api/Words/5
+        // PUT: /Words/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
         public async Task<IActionResult> PutWord(int id, Word word)
@@ -97,7 +97,7 @@ namespace EnglishLearningBlazorApp.Server.Controllers
             await _context.SaveChangesAsync();
         }
 
-        // DELETE: api/Words/5
+        // DELETE: /Words/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteWord(int id)
         {
