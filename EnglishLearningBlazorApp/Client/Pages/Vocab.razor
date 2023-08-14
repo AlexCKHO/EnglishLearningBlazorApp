@@ -24,17 +24,6 @@
 </div>
 
 <!-- Suggestions Dropdown -->
-@if (suggestions.Count > 0)
-{
-    <div class="suggestions">
-        <ul>
-            @foreach (var suggestion in suggestions)
-            {
-                <li>@suggestion</li>
-            }
-        </ul>
-    </div>
-}
 
 @if (suggestions.Count > 0)
 {
@@ -95,7 +84,8 @@ else
 
     private WordList? dictionary;
 
-
+    private Timer debounceTimer;
+    private const int DebounceDelay = 300; // Adjust the delay time as needed
 
     // WordList dictionary = WordList.CreateFromFiles(affContent, dicContent);
 
@@ -128,19 +118,63 @@ else
         }
     }
 
+
     private Stream GetEmbeddedResourceStream(string resourceName)
     {
         var assembly = Assembly.GetExecutingAssembly();
         return assembly.GetManifestResourceStream(resourceName);
     }
 
+
+    #region Suggestion
+
     private async Task HandleInput(ChangeEventArgs e)
     {
         userInput = e.Value?.ToString() ?? "";
 
-        // Call the suggests method with the user input
-        suggests(userInput);
+        // Call the suggests method with the user input, this will slow down the input box
+        if (debounceTimer == null)
+        {
+            debounceTimer = new Timer(DebounceTimerCallback, null, DebounceDelay, Timeout.Infinite);
+        }
+        else
+        {
+            debounceTimer.Change(DebounceDelay, Timeout.Infinite);
+        }
     }
+
+    private void DebounceTimerCallback(object state)
+    {
+        // This method will be called when the timer elapses
+        GenerateSuggestions();
+        debounceTimer.Dispose();
+        debounceTimer = null;
+    }
+
+    private async void GenerateSuggestions()
+    {
+        // This method generates suggestions based on the current user input.
+        if (dictionary.Check(userInput))
+        {
+            suggestions.Clear();
+            suggestions.Add(userInput);
+            StateHasChanged();
+        }
+        else
+        {
+            suggestions = dictionary.Suggest(userInput).ToList();
+            StateHasChanged(); // Notify Blazor to update the UI
+        }
+    }
+
+    protected async Task suggests(string input)
+    {
+
+        suggestions = dictionary.Suggest(input).ToList();
+    }
+
+    #endregion
+
 
     protected async Task GetExample()
     {
@@ -166,9 +200,6 @@ else
         words = await Http.GetFromJsonAsync<EnglishLearningBlazorApp.Shared.Word[]>("Words");
     }
 
-    protected void suggests(string input )
-    {
-        suggestions = dictionary.Suggest(input).ToList();
-    }
+
 
 }
