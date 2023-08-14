@@ -1,4 +1,5 @@
 ﻿@page "/vocab"
+@inject EnglishLearningBlazorApp.Client.Services.WordListService wordListService
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.WebAssembly.Authentication
 @using EnglishLearningBlazorApp.Client
@@ -7,6 +8,7 @@
 @using WeCantSpell.Hunspell;
 @inject HttpClient Http
 @inject IJSRuntime JSRuntime
+
 
 <PageTitle>Vocab</PageTitle>
 
@@ -81,16 +83,14 @@ else
 
     private string newWord = "";
 
-
-    private WordList? dictionary;
-
     private Timer debounceTimer;
+
     private const int DebounceDelay = 300; // Adjust the delay time as needed
 
     // WordList dictionary = WordList.CreateFromFiles(affContent, dicContent);
 
 
-
+    #region OnInitialized
 
     protected override async Task OnInitializedAsync()
     {
@@ -98,13 +98,6 @@ else
         {
             words = await Http.GetFromJsonAsync<EnglishLearningBlazorApp.Shared.Word[]>("Words");
 
-            if (dictionary == null){
-                using (var dictionaryStream = GetEmbeddedResourceStream("EnglishLearningBlazorApp.Client.wwwroot.en_GB.dic"))
-                using (var affixStream = GetEmbeddedResourceStream("EnglishLearningBlazorApp.Client.wwwroot.en_GB.aff"))
-                {
-                    dictionary = WordList.CreateFromStreams(dictionaryStream, affixStream);
-                }
-            }
             // await GetExample();
         }
         catch (AccessTokenNotAvailableException exception)
@@ -118,12 +111,7 @@ else
         }
     }
 
-
-    private Stream GetEmbeddedResourceStream(string resourceName)
-    {
-        var assembly = Assembly.GetExecutingAssembly();
-        return assembly.GetManifestResourceStream(resourceName);
-    }
+    #endregion
 
 
     #region Suggestion
@@ -154,7 +142,7 @@ else
     private async void GenerateSuggestions()
     {
         // This method generates suggestions based on the current user input.
-        if (dictionary.Check(userInput))
+        if (wordListService.Dictionary.Check(userInput))
         {
             suggestions.Clear();
             suggestions.Add(userInput);
@@ -162,7 +150,7 @@ else
         }
         else
         {
-            suggestions = dictionary.Suggest(userInput).ToList();
+            suggestions = wordListService.Dictionary.Suggest(userInput).ToList();
             StateHasChanged(); // Notify Blazor to update the UI
         }
     }
@@ -170,7 +158,7 @@ else
     protected async Task suggests(string input)
     {
 
-        suggestions = dictionary.Suggest(input).ToList();
+        suggestions = wordListService.Dictionary.Suggest(input).ToList();
     }
 
     #endregion
@@ -186,7 +174,7 @@ else
 
     protected async Task CreateNewWord()
     {
-        if (dictionary.Check(newWord))
+        if (wordListService.Dictionary.Check(newWord))
         {
             var response = await Http.PostAsync($"Words/{newWord}", null);
             response.EnsureSuccessStatusCode();
