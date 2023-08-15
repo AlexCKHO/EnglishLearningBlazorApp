@@ -53,8 +53,9 @@ If you have any questions, feedback, or suggestions, feel free to contact us at 
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).  -->
+This project is licensed under the [MIT License](LICENSE).  
 
 ---
 
 Thank you for choosing the English Learning App to enhance your language skills. We believe this application will aid you in building a strong vocabulary, improving pronunciation, and becoming more fluent in English. Your feedback and contributions are greatly appreciated as we strive to create a valuable learning tool.
+-->
