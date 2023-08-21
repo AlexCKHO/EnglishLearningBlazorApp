@@ -14,6 +14,8 @@ Welcome to the English Learning App, a comprehensive tool designed to enhance yo
 
 - **Audio Pronunciation:** Access audio pronunciations for words to improve your pronunciation and listening skills.
 
+- **ChatGPT Example:** based on the word and definition given by user, to generate example.
+
 <!-- ## Getting Started
 
 To embark on your English learning journey:
